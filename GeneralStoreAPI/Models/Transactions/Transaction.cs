@@ -25,7 +25,6 @@ namespace GeneralStoreAPI.Models.Transactions
         [Required]
         public int ItemCount { get; set; }
 
-        [Required]
         public DateTime DateOfTransaction { get; set; }
     }
 }

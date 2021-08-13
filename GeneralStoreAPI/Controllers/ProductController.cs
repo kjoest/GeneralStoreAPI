@@ -37,11 +37,10 @@ namespace GeneralStoreAPI.Controllers
             return InternalServerError();
         }
 
-
         [HttpGet]
         public async Task<IHttpActionResult> GetAllProducts()
         {
-            var products = await _context.Customers.ToListAsync();
+            var products = await _context.Products.ToListAsync();
             return Ok(products);
         }
 
@@ -50,12 +49,12 @@ namespace GeneralStoreAPI.Controllers
         {
             var product = await _context.Products.FindAsync(sku);
 
-            if(sku == null)
+            if (sku == null)
             {
                 return BadRequest("Bad Request");
             }
 
-            if(product == null)
+            if (product == null)
             {
                 return NotFound();
             }

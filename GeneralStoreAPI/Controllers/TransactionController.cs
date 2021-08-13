@@ -17,33 +17,9 @@ namespace GeneralStoreAPI.Controllers
         private readonly ApplicationDbContext _context = new ApplicationDbContext();
 
         [HttpPost]
-        public async Task<IHttpActionResult> Post([FromBody] Transaction transaction, Product product)
+        public async Task<IHttpActionResult> Post([FromBody] Transaction transaction)
         {
-            if(product != null)
-            {
-                return Ok(product);
-            }
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var products = await _context.Products.FindAsync(transaction.ProductSKU);
-            transaction.Product = products;
-
-            if (product == null)
-            {
-                return BadRequest("Bad Request.");
-            }
-
-            _context.Products.Add(product);
-
-            if (await _context.SaveChangesAsync() == 1)
-            {
-                return Ok(product.IsInStock);
-            }
-
-            if(transaction == null)
+            if (transaction == null)
             {
                 return BadRequest("Bad Request");
             }
@@ -52,19 +28,12 @@ namespace GeneralStoreAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var customer = await _context.Customers.FindAsync(transaction.CustomerID);
-            transaction.Customer = customer;
-
-            transaction.DateOfTransaction = DateTime.Now;
-
             _context.Transactions.Add(transaction);
 
-            if(await _context.SaveChangesAsync() == 1)
+            if (await _context.SaveChangesAsync() == 1)
             {
-                return Ok($"Transaction: {transaction.Product} was added successfully.");
+                return Ok($"{transaction.ProductSKU} was added successfully.");
             }
-
-            _context.Products.Remove(product);
 
             return InternalServerError();
         }
