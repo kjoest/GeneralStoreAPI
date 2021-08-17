@@ -19,7 +19,31 @@ namespace GeneralStoreAPI.Controllers
         [HttpPost]
         public async Task<IHttpActionResult> Post([FromBody] Transaction transaction)
         {
-            if (transaction == null)
+            var product = new Product();
+            await _context.Products.FindAsync(product);
+
+            if(transaction != null)
+            {
+                if (product.NumberInInventory > 0)
+                {
+                    if(product.IsInStock == true)
+                    {
+                       _context.Transactions.Add(transaction);
+                        if (product.IsInStock)
+                        {
+                            _context.Products.Remove(product);
+                        }
+                    }
+                }
+
+                if(product == null)
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+
+            if(transaction == null)
             {
                 return BadRequest("Bad Request");
             }
@@ -27,8 +51,6 @@ namespace GeneralStoreAPI.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            _context.Transactions.Add(transaction);
 
             if (await _context.SaveChangesAsync() == 1)
             {
