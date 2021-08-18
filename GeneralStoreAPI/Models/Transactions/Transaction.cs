@@ -14,6 +14,14 @@ namespace GeneralStoreAPI.Models.Transactions
         [Key]
         public int ID { get; set; }
 
+        [Required]
+        public int ItemCount { get; set; }
+
+        [Required]
+        public DateTime DateOfTransaction { get; set; }
+        
+        // Is the primary key of another table
+                        // Name of the navigation property
         [ForeignKey(nameof(Customer))]
         public int CustomerID { get; set; }
         public virtual Customer Customer { get; set; }
@@ -22,9 +30,9 @@ namespace GeneralStoreAPI.Models.Transactions
         public string ProductSKU { get; set; }
         public virtual Product Product { get; set; }
 
-        [Required]
-        public int ItemCount { get; set; }
+        //SQL- we can't have tables inside of tables
+        // In our entities (POCOs that get mapped to SQL tables) anytime we are referencing another class, we want to use virtual
 
-        public DateTime DateOfTransaction { get; set; }
+        // When we use that virtual keyword with Entity Framework it helps us to save memory when we are fetching data from the Database
     }
 }

@@ -1,4 +1,5 @@
 ﻿using GeneralStoreAPI.Models;
+using GeneralStoreAPI.Models.Customers;
 using GeneralStoreAPI.Models.Products;
 using GeneralStoreAPI.Models.Transactions;
 using System;
@@ -19,42 +20,33 @@ namespace GeneralStoreAPI.Controllers
         [HttpPost]
         public async Task<IHttpActionResult> Post([FromBody] Transaction transaction)
         {
-            var product = new Product();
-            await _context.Products.FindAsync(product);
-
-            if(transaction != null)
-            {
-                if (product.NumberInInventory > 0)
-                {
-                    if(product.IsInStock == true)
-                    {
-                       _context.Transactions.Add(transaction);
-                        if (product.IsInStock)
-                        {
-                            _context.Products.Remove(product);
-                        }
-                    }
-                }
-
-                if(product == null)
-                {
-                    return BadRequest("Bad Request");
-                }
-
-            }
-
-            if(transaction == null)
+            if (transaction == null)
             {
                 return BadRequest("Bad Request");
             }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            if (await _context.SaveChangesAsync() == 1)
+            // Lookup both the customer and product using the _context
+            var customer = await _context.Customers.FindAsync(transaction.CustomerID);
+            var product = await _context.Products.FindAsync(transaction.ProductSKU);
+
+            var validateResult = ValidateTransaction(transaction, product, customer);
+
+            if (!string.IsNullOrWhiteSpace(validateResult))
             {
-                return Ok($"{transaction.ProductSKU} was added successfully.");
+                return BadRequest(validateResult);
+            }
+
+            product.NumberInInventory -= transaction.ItemCount;
+            _context.Transactions.Add(transaction);
+
+            if (await _context.SaveChangesAsync() > 0)
+            {
+                return Ok(transaction);
             }
 
             return InternalServerError();
@@ -71,7 +63,7 @@ namespace GeneralStoreAPI.Controllers
         public async Task<IHttpActionResult> GetTransactionByID([FromUri] int id)
         {
             var transaction = await _context.Transactions.SingleOrDefaultAsync(transactions => transactions.ID == id);
-            if(transaction == null)
+            if (transaction == null)
             {
                 return NotFound();
             }
@@ -81,11 +73,11 @@ namespace GeneralStoreAPI.Controllers
         [HttpPut]
         public async Task<IHttpActionResult> Put([FromUri] int id, [FromBody] Transaction newTransation)
         {
-            if(id < 1)
+            if (id < 1)
             {
                 return BadRequest("Bad Request");
             }
-            if(id != newTransation.ID)
+            if (id != newTransation.ID)
             {
                 return BadRequest("Bad Request");
             }
@@ -96,7 +88,7 @@ namespace GeneralStoreAPI.Controllers
 
             var transaction = await _context.Transactions.FindAsync(id);
 
-            if(transaction == null)
+            if (transaction == null)
             {
                 return NotFound();
             }
@@ -107,7 +99,7 @@ namespace GeneralStoreAPI.Controllers
             transaction.ItemCount = newTransation.ItemCount;
             transaction.DateOfTransaction = newTransation.DateOfTransaction;
 
-            if(await _context.SaveChangesAsync() == 1)
+            if (await _context.SaveChangesAsync() == 1)
             {
                 return Ok();
             }
@@ -119,18 +111,43 @@ namespace GeneralStoreAPI.Controllers
         public async Task<IHttpActionResult> Delete([FromUri] int id)
         {
             var transaction = await _context.Transactions.FindAsync();
-            
-            if(transaction != null)
+
+            if (transaction != null)
             {
                 _context.Transactions.Remove(transaction);
 
-                if(await _context.SaveChangesAsync() == 1)
+                if (await _context.SaveChangesAsync() == 1)
                 {
                     return Ok();
                 }
             }
 
             return InternalServerError();
+        }
+
+        private string ValidateTransaction(Transaction transaction, Product product, Customer customer)
+        {
+            if(customer == null)
+            {
+                return $"Invalid Transaction: Customer with ID: {transaction.CustomerID} does not exist.";
+            }
+
+            if(product == null)
+            {
+                return $"Invalid Transaction: Product with Sku: {transaction.ProductSKU} does not exist.";
+            }
+
+            if (!product.IsInStock)
+            {
+                return $"Invalid Transaction: Product with Sku: {transaction.ProductSKU} is not in stock.";
+            }
+
+            if(product.NumberInInventory < transaction.ItemCount)
+            {
+                return $"Invalid Transaction: Product with Sku: {transaction.ProductSKU} doest not have enough in the inventory to complete the transaction.";
+            }
+
+            return string.Empty;
         }
     }
 }

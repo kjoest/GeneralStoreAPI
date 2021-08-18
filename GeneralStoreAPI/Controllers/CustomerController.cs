@@ -18,6 +18,7 @@ namespace GeneralStoreAPI.Controllers
         [HttpPost]
         public async Task<IHttpActionResult> Post([FromBody] Customer customer)
         {
+            // Validating is the data that's coming in, in the correct format?
             if (customer == null)
             {
                 return BadRequest("Bad Request");

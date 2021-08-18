@@ -45,18 +45,19 @@ namespace GeneralStoreAPI.Controllers
         }
 
         [HttpGet]
+        [Route("api/Product/{sku}")]
         public async Task<IHttpActionResult> GetProductBySKU([FromUri] string sku)
         {
             var product = await _context.Products.FindAsync(sku);
 
             if (sku == null)
             {
-                return BadRequest("Bad Request");
+                return NotFound();
             }
 
             if (product == null)
             {
-                return NotFound();
+                return BadRequest("Bad Request");
             }
 
             return Ok(product);
